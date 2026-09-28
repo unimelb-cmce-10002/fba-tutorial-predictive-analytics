@@ -1,12 +1,52 @@
-<!-- question-type: prepare -->
-### Exercise 5: Title
+<!-- question-type: inclass -->
+## Exercise 5: Developing Another Time-Based Model
 
-This is the text for the question, with its accompanying code 
+The lag-1 model assumes that the **most recent game** is the most useful past game for predicting attendance at the next game. But this is only one way to use the timing of past games.
+
+Your task is to develop a **different time-based prediction rule** using the training data.
+
+### (a) Propose a prediction rule
+
+Propose a prediction rule that uses attendance at previous games to predict attendance at the current game.
+
+Your rule should use only information that would have been available **before the game you are predicting**.
+
+### (b) Defend your choice
+
+Explain why you think your proposed rule could produce sensible predictions of White Sox attendance. What information from recent attendance does your rule capture, and why might that be useful?
+
+### (c) Create your predictions
+
+Implement your prediction rule using `chw_train`.
+
+Store your predictions in a new column. Give the column a short, descriptive name that makes it clear which model it belongs to.
+
+Remember to:
+
+- calculate predictions separately within each season;
+- arrange games in chronological order before using information from previous games; and
+- `ungroup()` once you have finished any grouped calculations.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+YOUR_CODE_HERE
 ```
+
+### (d) Evaluate your model
+
+Use `attendance_metrics()` to evaluate your new model on the training data.
+
+```{r}
+#| eval: false
+
+YOUR_CODE_HERE
+```
+
+Compare these results with the training performance of the lag-1 model.
+
+Does your new model improve on the lag-1 model for any of the three metrics? Does it perform worse on any?
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +59,61 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- recognise that there are many reasonable ways to use recent attendance to construct a time-based prediction;
+- make and defend an analytical modelling choice before writing code;
+- ensure that a prediction uses only information available before the game being predicted; and
+- compare the training performance of their proposed model with the lag-1 benchmark.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
+- There is deliberately no single correct model in this exercise. Students should make a reasonable proposal and explain the logic behind it.
+- A sensible time-based model should use only past attendance. Future attendance cannot be used to predict an earlier game.
+- Encourage students to think about the trade-off between using the most recent information and smoothing over several recent games.
+- Different groups may produce different models. This is useful: the exercise is about analytical judgement, not reproducing one prescribed answer.
+- The illustrative solution uses the mean of the previous three games. This is only one reasonable approach and should not be presented as the model students were expected to discover.
+- Students should continue to calculate lagged quantities within season and `ungroup()` afterwards.
+- Comparisons in part (d) are still based on training performance. Do not let a lower training error become a claim that the new model will necessarily predict unseen games better.
 
+💬 **Discussion Prompts**
 
-💬 **Suggested In-Class Prompts** (if needed)
+Before students start coding, ask a few groups to share their proposed rules and reasoning. Useful questions include:
 
-List as needed
+- Why might your rule be better than using only the previous game?
+- What information does your rule give more or less weight to?
+- How many previous games does your model need before it can make its first prediction?
+- Would your rule respond quickly or slowly if attendance suddenly changed?
+
+If students immediately converge on a three-game average, encourage alternatives rather than telling the whole room to use the same rule.
+
+🛟 **If Students Are Stuck**
+
+Do not immediately give students the three-game trailing-average solution. First, remind them that the lag-1 model uses only the previous game's attendance and ask: **"What else could we do with attendance from previous games?"**
+
+If they are still stuck, offer some possibilities to choose from:
+
+- take the **average of the previous two games**;
+- take the **average of several previous games**;
+- give **more weight to recent games** and less weight to older games;
+- use a **longer window of recent games** to produce a smoother prediction.
+
+A model based simply on attendance two games ago is also possible, but it is less interesting here: it mainly changes which single past game is used rather than combining information from recent games.
+
+Ask the group to choose an approach and explain why it might be useful **before** they start coding. The goal is not to steer everyone toward the same model, but to help students turn an intuitive idea about recent attendance into a prediction rule they can defend.
+
+If students struggle to implement their chosen idea, help them translate the rule into the required `lag()` operations rather than replacing their choice with the illustrative three-game-average solution.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may calculate a moving average that includes the current game's attendance. That would use the outcome they are trying to predict.
+- Students may forget to arrange games chronologically before creating lagged variables.
+- Students may allow the end of one season to feed into predictions for the next season.
+- Students may propose a rule but give no substantive reason why it could help prediction.
+- Different models will have different numbers of missing predictions at the beginning of each season. For example, a three-game trailing average cannot make a prediction until three previous games are available.
+- Students may interpret improved training performance as proof that their model is better for future games. Reinforce that test performance is still required.
 
 :::
 
@@ -55,11 +133,49 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+There are many reasonable answers to this exercise. The solution below illustrates one possible approach: predicting attendance using the **average attendance at the previous three games**.
+
+#### (a)
+
+One possible prediction rule is to use the mean attendance from the previous three White Sox home games in the same season.
+
+#### (b)
+
+Using three previous games may produce a more stable prediction than using only the immediately preceding game. Attendance at a single game could be unusually high or low for reasons that do not persist to the next game. Averaging several recent games smooths some of this game-to-game variation while still using relatively recent information.
+
+There is a trade-off. Using several games means the prediction may respond more slowly if attendance patterns change quickly, and the model cannot make a prediction until enough previous games are available.
+
+#### (c)
 
 ```{r}
-print("Hello, world!")
+chw_train_pred_trailing3 <-
+  chw_train |>
+  group_by(year) |>
+  arrange(gm, .by_group = TRUE) |>
+  mutate(
+    pred_trailing3 = (
+      lag(attendance, 1) +
+      lag(attendance, 2) +
+      lag(attendance, 3)
+    ) / 3
+  ) |>
+  ungroup()
 ```
+
+This calculation uses only attendance from the three games that occurred before the game being predicted. The first three games of each season therefore have missing predictions.
+
+#### (d)
+
+```{r}
+chw_train_pred_trailing3 |>
+  attendance_metrics(
+    truth = attendance,
+    estimate = pred_trailing3
+  )
+```
+
+The exact comparison with the lag-1 model depends on the resulting training metrics. Students should identify which metrics improve or worsen relative to their lag-1 results, while remembering that this is still a comparison on the training data.
+
 :::
 
 :::

@@ -1,8 +1,8 @@
 project:
   render:
     - tutorial.qmd
-title: 'Teaching Guide: R version'
+title: 'Tutorial Week 10 Teaching Guide: Predicting Attendance at Baseball Games'
 format:
   html:
-    output-file: "tutorial-r-teaching-guide"
+    output-file: "tutorial-week10-teaching-guide"
     output-ext:  "html"

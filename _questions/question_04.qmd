@@ -1,12 +1,21 @@
-<!-- question-type: prepare -->
-### Exercise 4: Title
+<!-- question-type: inclass -->
+### Exercise 4: What Have We Learned So Far?
 
-This is the text for the question, with its accompanying code 
+Before developing any new prediction approaches, return to the model-performance results you calculated in the pre-class exercises for the **lag-1 model** and the **opponent model**.
 
-```{r}
-# Example code for the question
-1 + 1
-```
+#### (a) Comparing the models
+
+Compare the training-data performance of the two models using the MAE, RMSE, and MAPE values you obtained.
+
+Does either model perform better across **all three** metrics? What do the results tell you about their relative performance on the training data?
+
+#### (b) Can we choose a model yet?
+
+Suppose the White Sox ask you which of these two models they should use to predict attendance at future games.
+
+Can we use the results above to determine which model will make better predictions for future games? Explain why or why not.
+
+For now, we will keep the 2025 test data aside. Before evaluating our models on unseen games, we will use the training data to explore a few other ways of making predictions.
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +28,32 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- distinguish between performance on data used to develop a prediction approach and performance on unseen data;
+- recognise that different prediction metrics can favour different models; and
+- understand why training performance alone is not sufficient evidence for choosing a model for future prediction.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
+- The lag-1 and opponent models do not have to be ranked in the same order by every metric. MAE, RMSE, and MAPE measure prediction error differently.
+- Training performance tells us how closely each prediction rule matches observations in the data being used to develop and inspect the model.
+- Good training performance is useful, but it is not the same thing as evidence that a model will predict unseen games well.
+- If we choose a model because it performs well on the same data we have repeatedly used to develop and compare models, we risk favouring patterns that are particular to those data.
+- The 2025 test data give us a set of games that were not used while developing the prediction approaches. That is why they will provide more convincing evidence about performance on future games.
+- Do not move to the test data yet. The point of this exercise is to establish why we are deliberately keeping them aside while we continue model development.
 
+💬 **Discussion Prompt**
 
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+Ask students what they would tell the White Sox if they were forced to make a recommendation at this point. Push on answers such as "the model with the lowest MAE" or "the model that wins two metrics." The important distinction is not which metric they prefer; it is that all of these values were calculated on the training data.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may conclude that whichever model has the smallest value on two of the three metrics is already the better predictive model.
+- Students may say that training performance tells us nothing. It does tell us how the models behave on the training data and is useful during model development; it simply does not provide an independent assessment of future predictive performance.
+- Students may suggest checking the 2025 data now and then returning to develop more models. Emphasise that repeatedly consulting the test data while making modelling decisions would make the test set part of the model-development process.
 
 :::
 
@@ -55,11 +73,30 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+#### (a)
 
-```{r}
-print("Hello, world!")
-```
+Neither model performs better across all three measures of prediction error. The lag-1 model has the lower MAE, while the opponent model has the lower RMSE and a very similar, slightly lower MAPE.
+
+The metrics place different emphasis on prediction errors. 
+
+**MAE** tells us the average absolute size of our errors in attendance terms, so it is relatively easy to interpret: roughly how many attendees are we wrong by? 
+
+**RMSE** penalises larger errors more heavily, so a model can have a worse MAE but a better RMSE if it avoids some particularly large misses. 
+
+**MAPE** expresses errors relative to actual attendance, making errors comparable in percentage terms rather than numbers of attendees.
+
+This helps explain why the metrics do not necessarily rank the models in the same way. Which metric matters most depends on the business problem—for example, whether the White Sox care particularly strongly about avoiding very large prediction errors. 
+
+However, all three values here still describe performance on the **training data**. They help us understand how the models behave, but they do not yet tell us which model will predict unseen games better.
+
+#### (b)
+
+No. These results tell us how the two models perform on the **training data**, but the White Sox ultimately care about how accurately the models predict attendance at games they have not yet observed.
+
+The training data are the data we are using to develop, inspect, and compare our prediction approaches. A model can match patterns in these historical observations well without those patterns necessarily carrying over to new games. If we choose a model only because it performs well on the data used during model development, we may choose a model that fits those particular observations rather than one that generalises well.
+
+This is why we have kept the 2025 games separate. Once we have finished developing our candidate models, we can apply each of them to these **unseen games** and compare their test performance. That will give us stronger evidence about how well each approach is likely to predict future attendance.
+
 :::
 
 :::

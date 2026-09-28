@@ -1,12 +1,65 @@
 <!-- question-type: inclass -->
-### Exercise 1: Title
+### Exercise 6: Finding More Similar Games
 
-This is the text for the question, with its accompanying code 
+The models we have developed so far make different choices about which previous games should inform a prediction. For example, lag-1 assumes that the **most recent game** is the most useful comparison.
+
+But the most recent game is not necessarily the **most similar game**.
+
+#### (a) Which games are most useful?
+
+Suppose you need to predict attendance for an upcoming White Sox home game.
+Propose a prediction rule that uses attendance from past games you think are particularly useful comparisons.
+
+You can use any combination of the ideas you have seen so far. For example, you might:
+
+- define groups of similar games and use their average attendance;
+- use `lag()` to find a relevant previous game; or
+- combine grouping and lagging so that the previous observation comes from a particular type of game.
+
+Describe your prediction rule in words before writing any code.
+
+#### (b) Defend your choice
+
+Explain why the past games selected by your rule should be useful for predicting attendance at the upcoming game.
+
+In particular, discuss:
+
+1. What makes these games similar to the game you are trying to predict?
+2. What information might your rule capture that the models from the previous exercises miss?
+
+#### (c) Create your predictions
+
+Implement your prediction rule using `chw_train`.
+
+Depending on your idea, you may need to use some combination of:
+
+- `mutate()` to create useful variables;
+- `group_by()` and `summarise()` to calculate averages for similar games;
+- `left_join()` to attach those averages to games;
+- `arrange()` and `lag()` to use a relevant previous observation.
+
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+chw_train_pred_new <-
+  YOUR_CODE_HERE
 ```
+
+#### (d) Evaluate your prediction rule
+
+Use `attendance_metrics` to evaluate your new rule on the training data.
+
+```{r}
+#| eval: false
+
+attendance_metrics(
+  chw_train_pred_new,
+  truth = YOUR_CODE_HERE,
+  estimate = YOUR_CODE_HERE
+)
+```
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +72,55 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- recognise that a prediction rule depends on deciding which historical observations are most useful;
+- develop a prediction rule using grouping, lagging, or a combination of the two;
+- explain why their chosen historical games may be useful comparisons for an upcoming game; and
+- evaluate their new rule using the training data.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
+- Different prediction rules use different definitions of which past games are most informative.
+- Grouping changes which observations are treated as comparable.
+- Combining `group_by()` and `lag()` changes what counts as the "previous" observation.
+- A prediction rule should use only information that would be available before the game being predicted.
+- Narrower groups may produce more targeted comparisons, but they also leave fewer historical observations to learn from.
+- Training performance can help identify promising prediction rules, but it does not tell us whether those improvements will generalise to new games.
+- In the illustrative solution, grouping by `opp` and then using `lag(attendance)` predicts attendance using the previous White Sox home game against the same opponent.
 
+🛟 **If Students Are Stuck**
 
-💬 **Suggested In-Class Prompts** (if needed)
+Do not immediately give students the previous-same-opponent solution. First ask: **"Which past games might be especially useful comparisons for the game we are trying to predict?"**
 
-List as needed
+If they are still stuck, offer some possibilities to choose from:
+
+- games against the **same opponent**;
+- other **weekend** games;
+- games sharing more than one characteristic;
+- the **most recent game** within a relevant group;
+- an **average of historical games** within a relevant group.
+
+Ask students to choose an approach and explain why those games might be useful comparisons **before** they start coding.
+
+If students have an idea but struggle to implement it, help them decide whether the rule requires:
+
+- `group_by()` and `summarise()` to calculate a group average;
+- `arrange()` and `lag()` to use a previous observation; or
+- `group_by()` together with `lag()` to use the previous observation within a group.
+
+The goal is not to steer everyone toward the same model, but to help students translate an intuitive idea about **which historical games are relevant** into a prediction rule they can defend.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may choose grouping variables that would not be known before the game.
+- Students may use a characteristic to define groups without explaining why it should make games comparable.
+- Students may think `lag()` always means the previous game overall. After `group_by()`, it means the previous observation within each group.
+- Students may automatically group by `year`, which can prevent a rule such as previous-same-opponent from using a game from the prior season.
+- Students may create very narrow groups and overlook that some groups contain few or no historical observations.
+- Students may conclude that a model with better training metrics is necessarily better at predicting future games.
 
 :::
 
@@ -55,14 +140,59 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+There is no single correct prediction rule in this exercise. The solution below illustrates one possibility: **use attendance at the previous White Sox home game against the same opponent**.
+
+#### (a) Which games are most useful?
+
+One possible rule is:
+
+> For each game, predict attendance using attendance at the most recent previous White Sox home game against the same opponent.
+
+For example, if the upcoming game is against Detroit, we use attendance at the previous White Sox home game against Detroit rather than attendance at the immediately preceding White Sox game.
+
+#### (b) Defend your choice
+
+The ordinary lag-1 model assumes that the immediately previous game is the most informative comparison. However, opponents may attract different levels of fan interest.
+
+Using the previous game against the same opponent attempts to preserve some **recency** while also comparing the upcoming game with one sharing an important characteristic.
+
+The rule may therefore capture opponent-specific differences that ordinary lag-1 misses, without averaging together every historical game against that opponent.
+
+This is only one defensible definition of similarity. Other rules proposed by students may be equally reasonable.
+
+#### (c) Create the predictions
+
+Arrange the games chronologically, group by opponent, and then calculate the lag:
 
 ```{r}
-print("Hello, world!")
+chw_train_pred_new <-
+  chw_train |>
+  arrange(year, gm) |>
+  group_by(opp) |>
+  mutate(
+    pred_opp_lag1 = lag(attendance)
+  ) |>
+  ungroup()
 ```
+
+The important feature is that `lag()` now operates **within opponent**.
+
+For each opponent, the first observed game will have a missing prediction because there is no earlier game against that opponent in the training data.
+
+#### (d) Evaluate the prediction rule
+
+```{r}
+attendance_metrics(
+  chw_train_pred_new,
+  truth = attendance,
+  estimate = pred_opp_lag1
+)
+```
+
 :::
 
 :::
 
 :::
 <!-- END PROFILE:r-solutions -->
+

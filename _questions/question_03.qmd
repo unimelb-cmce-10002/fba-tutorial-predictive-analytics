@@ -1,12 +1,56 @@
 <!-- question-type: prepare -->
-### Exercise 3: Title
+## Exercise 3: Predicting Attendance Using the Opponent
 
-This is the text for the question, with its accompanying code 
+Our lag-1 model uses **when a game occurs** to decide which past game should inform our prediction. Another approach is to look for past games that are similar in some other way.
+
+One potentially useful characteristic is the **opponent**. Some visiting teams may consistently attract larger crowds than others.
+
+For each opponent, we will use their average attendance in **2023** as our prediction for games against that opponent.
+
+### (a) Calculate average attendance by opponent
+
+Using `chw_train`, keep only games from 2023. Then:
+
+- group the data by `opp`;
+- calculate mean `attendance` for each opponent; and
+- store the mean in a variable called `pred_opp`.
+
+Store the resulting table as `attendance_by_opp`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+attendance_by_opp <-
+  YOUR_CODE_HERE
 ```
+
+### (b) Create predictions for the training data
+
+We now have one predicted attendance value for each opponent.
+
+Use a `left_join()` to add `pred_opp` to `chw_train`. Store the result as `chw_train_pred_opp`.
+
+```{r}
+#| eval: false
+chw_train_pred_opp <-
+  YOUR_CODE_HERE |>
+  select(gm, year, opp, attendance, pred_opp)
+```
+
+Why do we use `left_join()` with `chw_train` on the left-hand side?
+
+### (c) Evaluate the opponent model
+
+Use `attendance_metrics()` to evaluate the opponent model on the training data.
+
+```{r}
+#| eval: false
+chw_train_pred_opp |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
+```
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +63,31 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- understand a group-based prediction rule as an alternative to a time-based rule;
+- create a prediction by calculating historical mean attendance within opponent groups;
+- apply a prediction table to other observations using `left_join()`; and
+- evaluate the resulting predictions on the training data.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
-
-
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+- The opponent model defines "similar games" as games against the same opponent.
+- The prediction rule is learned from 2023 games: each opponent receives its mean 2023 attendance.
+- `summarise()` creates a lookup table with one prediction for each opponent.
+- `left_join()` applies that lookup table to the training games by matching on `opp`.
+- Keeping `chw_train` on the left of the join preserves the games we want to predict.
+- As with the lag-1 model, these metrics describe performance on the training data. We have not yet evaluated performance on unseen games.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may calculate opponent means using all years rather than filtering to 2023 first.
+- Students may forget to group by `opp` before calculating mean attendance.
+- Students may join in the wrong direction or omit the join key.
+- Some opponents may not have a 2023 prediction available. If this occurs, use it as an opportunity to discuss that a group-based prediction can only be applied when the relevant historical group exists.
+- Students may compare the training metrics and immediately conclude that one model is better for predicting future games. Reinforce that this comparison is not yet based on unseen data.
 
 :::
 
@@ -55,11 +107,39 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+#### (a)
 
 ```{r}
-print("Hello, world!")
+attendance_by_opp <-
+  chw_train |>
+  filter(year == 2023) |>
+  group_by(opp) |>
+  summarise(
+    pred_opp = mean(attendance)
+  )
 ```
+
+#### (b)
+
+```{r}
+chw_train_pred_opp <-
+  chw_train |>
+  left_join(attendance_by_opp, by = "opp") |>
+  select(gm, year, opp, attendance, pred_opp)
+```
+
+We use `left_join()` with `chw_train` on the left-hand side because we want to keep the White Sox training games and add the corresponding opponent-based prediction to each game.
+
+#### (c)
+
+```{r}
+chw_train_pred_opp |>
+  attendance_metrics(
+    truth = attendance,
+    estimate = pred_opp
+  )
+```
+
 :::
 
 :::

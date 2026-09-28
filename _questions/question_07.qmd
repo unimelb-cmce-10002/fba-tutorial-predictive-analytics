@@ -1,12 +1,99 @@
 <!-- question-type: inclass -->
-### Exercise 7: Title
+### Exercise 7: How Well Do Our Models Predict New Games?
 
-This is the text for the question, with its accompanying code 
+We developed our prediction rules using the training data. Now we can see how well they predict **new games**.
+
+#### (a)
+
+Apply the prediction rules you developed in the previous exercises to the 2025 test data. Do not use 2025 attendance to construct or update your prediction rules.
+
+Store the predictions together with actual attendance in `chw_test_preds`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+chw_test_preds <-
+  chw_test |> 
+  YOUR_CODE_HERE
 ```
+
+#### (b) Compare the same games
+
+Create `chw_test_complete` by keeping only games for which all of the models you want to compare have predictions. Why does evaluating the models on the **same games** make the comparison fairer?
+
+
+```{r}
+#| eval: false
+
+chw_test_complete <-
+  chw_test_preds |>
+  filter(
+    YOUR_CODE_HERE
+  )
+```
+
+
+#### (c) Reshape the predictions
+
+Each model is currently stored in a different prediction column. Explain why this **wide format would lead us to repeat very similar code** when evaluating several models.
+
+#### (d)
+
+Rather than keeping the predictions in wide format, reshape them into long format.
+
+Use `pivot_longer()` to create a `model` column and a `.pred` column.
+
+```{r}
+#| eval: false
+
+chw_test_long <-
+  chw_test_complete |>
+  pivot_longer(
+    cols = YOUR_CODE_HERE,
+    names_to = YOUR_CODE_HERE,
+    values_to = YOUR_CODE_HERE
+  )
+```
+
+#### (e) Evaluate the models
+
+Calculate MAE, RMSE, and MAPE for each model.
+
+```{r}
+#| eval: false
+
+test_metrics <-
+  chw_test_long |>
+  YOUR_CODE_HERE |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
+
+test_metrics
+```
+
+#### (f) Make the results easier to compare
+
+Use `pivot_wider()` to reshape the data once more to create one row per model, with separate columns for MAE, RMSE, and MAPE.
+
+```{r}
+#| eval: false
+
+test_metrics_wide <-
+  test_metrics |>
+  select(model, .metric, .estimate) |>
+  pivot_wider(
+    names_from = YOUR_CODE_HERE,
+    values_from = YOUR_CODE_HERE
+  )
+
+test_metrics_wide
+```
+
+#### (g) 
+
+Which is the best prediction model? Explain your reasoning.
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +106,38 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- apply prediction rules developed using the training data to unseen test data;
+- understand why models should be compared on the same observations;
+- use long-format data to evaluate several prediction models efficiently;
+- use wide-format data to compare model performance; and
+- select a prediction model using test-set performance.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
-
-
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+- The 2025 data are used to evaluate prediction rules developed using the training data.
+- Comparing models on the same games ensures differences in metrics are not driven by different evaluation samples.
+- `pivot_longer()` turns the prediction model from separate columns into a `model` variable, allowing the same metric calculation to be applied across models.
+- `pivot_wider()` makes the resulting metrics easier to compare across models.
+- Long and wide formats are useful for different analytical tasks rather than one format being inherently better.
+- Test performance is the relevant evidence when choosing among models intended to predict new games.
+- In the provided solution, `pred_opp_lag1` performs best on all three test metrics:
+  - MAE = 4,393;
+  - RMSE = 6,386; and
+  - MAPE = 25.1%.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may use 2025 attendance to re-estimate a prediction rule rather than only to evaluate predictions.
+- Students may compare models using different sets of games when some predictions are missing.
+- Students may repeat the metric calculation separately for each prediction column rather than using the long format and `group_by(model)`.
+- Students may think long-format data are always preferable to wide-format data, rather than recognising that the useful shape depends on the task.
+- Students may choose a model based on training performance rather than its performance on unseen test data.
+- Students may select a model using only one metric without noticing that, in this example, all three metrics identify the same best-performing model.
+
 
 :::
 
@@ -55,11 +157,149 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+There is no single solution to part (a) because students may have developed different prediction rules.
+
+The solution below illustrates one path using:
+
+- lag-1;
+- a trailing-three average;
+- average attendance by opponent; and
+- attendance at the previous game against the same opponent.
+
+#### (a)
+
+First create the time-based predictions for the 2025 games:
 
 ```{r}
-print("Hello, world!")
+chw_test_preds <-
+  chw_test |>
+  arrange(gm) |>
+  mutate(
+    pred_lag1 = lag(attendance),
+    pred_trailing3 = (
+      lag(attendance, 1) +
+      lag(attendance, 2) +
+      lag(attendance, 3)
+    ) / 3
+  )
 ```
+
+For the opponent-average model, calculate the prediction using only the training data:
+
+```{r}
+attendance_by_opp <-
+  chw_train |>
+  group_by(opp) |>
+  summarise(
+    pred_opp = mean(attendance, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+For the previous-same-opponent model, calculate the lag while the historical games are still available:
+
+```{r}
+chw_opp_lag1 <-
+  chw_attend |>
+  arrange(year, gm) |>
+  group_by(opp) |>
+  mutate(
+    pred_opp_lag1 = lag(attendance)
+  ) |>
+  ungroup() |>
+  filter(year == 2025) |>
+  select(gm, pred_opp_lag1)
+```
+
+Then add the opponent-based predictions:
+
+```{r}
+chw_test_preds <-
+  chw_test_preds |>
+  left_join(
+    attendance_by_opp,
+    by = "opp"
+  ) |>
+  left_join(
+    chw_opp_lag1,
+    by = "gm"
+  )
+```
+
+Students using different rules should instead apply the rules they developed in the previous exercises.
+
+#### (b)
+
+For the illustrative models:
+
+```{r}
+chw_test_complete <-
+  chw_test_preds |>
+  filter(
+    !is.na(pred_lag1),
+    !is.na(pred_trailing3),
+    !is.na(pred_opp),
+    !is.na(pred_opp_lag1)
+  )
+
+nrow(chw_test_complete)
+```
+
+Evaluating the models on the same games means differences in the performance metrics are not driven by the models being evaluated on different sets of observations.
+
+#### (c)
+
+In the wide data, each model is stored in a different prediction column. Calculating the same metrics for each model would therefore require us to repeat very similar code while changing only the prediction column.
+
+#### (d)
+
+```{r}
+chw_test_long <-
+  chw_test_complete |>
+  pivot_longer(
+    cols = starts_with("pred_"),
+    names_to = "model",
+    values_to = ".pred"
+  )
+```
+
+The model names that previously appeared across several columns are now values of the `model` variable. All predictions are stored in the `.pred` variable.
+
+#### (e)
+
+```{r}
+test_metrics <-
+  chw_test_long |>
+  group_by(model) |>
+  attendance_metrics(
+    truth = attendance,
+    estimate = .pred
+  )
+
+test_metrics
+```
+
+Because model identity is now a variable, `group_by(model)` allows the same call to `attendance_metrics()` to be applied to every model.
+
+#### (f)
+
+```{r}
+test_metrics_wide <-
+  test_metrics |>
+  select(model, .metric, .estimate) |>
+  pivot_wider(
+    names_from = .metric,
+    values_from = .estimate
+  )
+
+test_metrics_wide
+```
+
+#### (h)
+
+`pred_opp_lag1` is the best-performing prediction model. It has the lowest MAE, RMSE, and MAPE on the test data. 
+
+
 :::
 
 :::

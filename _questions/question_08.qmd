@@ -1,12 +1,57 @@
 <!-- question-type: inclass -->
-### Exercise 8: Title
+### Exercise 8: Communicating Your Results in an Analytics Team Memo
 
-This is the text for the question, with its accompanying code 
+You have now developed and evaluated several ways to predict White Sox home-game attendance.
 
-```{r}
-# Example code for the question
-1 + 1
-```
+Your task is to write a short memo for an **analytics team meeting**. The goal is to help the team decide which prediction approach should be used as a starting point for forecasting attendance at future games.
+
+::: {.callout-tip collapse=true}
+
+## Writing Hints
+
+* Use the **"Write Like an Amazonian"** tips to guide your writing.
+* A strong memo should **compare the prediction approaches**, not just describe the model you prefer.
+* Focus on the **analytical takeaway**: what did the different prediction rules capture, and which ideas generalised to new games?
+* Use the **test-set results** as your main evidence when comparing predictive performance.
+* Keep the writing clear and direct. Do not simply restate the code you ran.
+
+:::
+
+::: {.callout-note collapse=true}
+
+## Suggested Memo Structure
+
+Use the outline below and provide **2–3 bullet points under each subheading**.
+
+**Problem Statement**  
+*(1 short paragraph summarising why the White Sox want to predict attendance and what business decisions these forecasts could support)*
+
+**Approaches Compared**
+
+* Briefly describe the prediction approaches you explored
+* Explain what historical information each approach uses
+
+**Recommended Approach**
+
+* Which prediction model would you recommend the analytics team use as a starting point?
+* What evidence supports your recommendation?
+
+**What We Learned About Attendance**
+
+* What kinds of historical games appeared to be most useful for predicting attendance?
+* Did the models reveal anything about whether recent games, opponents, or other similarities matter?
+
+**Proposed Implications**
+
+* How could the recommended predictions help with staffing, food and merchandise planning, or stadium operations?
+* How should the team interpret the size of the prediction errors when using the model?
+
+**Limitations & Next Steps**
+
+* What are the main limitations of the prediction approach?
+* What additional information or model improvements would you want the team to explore next?
+
+:::
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +64,36 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- communicate predictive results in a short business-facing analytics memo;
+- compare several prediction approaches rather than discussing one model in isolation;
+- use test-set performance as the main evidence for a recommendation;
+- translate prediction errors into practical business meaning; and
+- distinguish analytical findings from limitations and possible next steps.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
-
-
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+- The memo should answer a business question, not reproduce the analysis workflow.
+- Students should compare the models using evidence from the 2025 test data.
+- In the illustrative solution, `pred_opp_lag1` performs best on all three test metrics:
+  - MAE = 4,393;
+  - RMSE = 6,386; and
+  - MAPE = 25.1%.
+- The useful analytical insight is that the most recent game against the **same opponent** appears to be a better comparison than simply using the immediately previous game.
+- An MAE of about 4,400 means forecasts are off by roughly 4,400 attendees on average, so the predictions should support planning rather than be treated as exact attendance counts.
+- Recommendations should follow from the evidence, while limitations and next steps should remain clearly separated from the findings.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may recommend the model with the best training performance rather than the best test performance.
+- Students may list metric values without explaining what they imply.
+- Students may describe code or functions rather than the analytical idea behind each prediction rule.
+- Students may claim that opponent identity causes attendance differences. The exercise provides predictive evidence, not a causal estimate.
+- Students may treat the forecast as exact rather than recognising the remaining prediction error.
+- Students may propose operational actions that go beyond what the analysis supports without identifying them as possible implications or next steps.
 
 :::
 
@@ -55,11 +113,42 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+There is no single correct memo. A strong response should make a clear recommendation, support it with the test-set evidence, and explain what the results mean for the White Sox.
 
-```{r}
-print("Hello, world!")
-```
+One possible response is shown below.
+
+**Problem Statement**
+
+White Sox attendance forecasts can help the organisation plan staffing, food and merchandise inventory, and other stadium operations before each home game. We compared several prediction rules to identify a useful starting point for forecasting attendance at future games.
+
+**Approaches Compared**
+
+- `pred_lag1` used attendance at the immediately previous White Sox home game.
+- `pred_trailing3` averaged attendance across the previous three home games.
+- `pred_opp` used historical average attendance against the same opponent.
+- `pred_opp_lag1` used attendance at the most recent previous home game against the same opponent.
+
+**Recommended Approach**
+
+- We would use `pred_opp_lag1` as the starting prediction model.
+- On the 2025 test games, it had the lowest MAE (**4,393**), RMSE (**6,386**), and MAPE (**25.1%**) of the four approaches.
+
+**What We Learned About Attendance**
+
+- Using the most recent game's attendance performed reasonably well, but using the most recent game against the **same opponent** improved prediction performance.
+- The results suggest that both **similarity** and **recency** matter: a recent game against the same opponent was more informative than either recent attendance or opponent averages alone.
+
+**Proposed Implications**
+
+- The model could provide a useful baseline for staffing, concessions, merchandise, and other operational planning before each game.
+- An MAE of about 4,400 means the forecast is still typically several thousand attendees away from the actual outcome, so managers should use it as a planning input rather than an exact attendance count.
+- Operational decisions with high costs from under- or over-preparation may still require buffers around the point prediction.
+
+**Limitations & Next Steps**
+
+- The models use only a small amount of historical information and omit factors such as weather, day of week, promotions, ticket prices, team performance, and competing events.
+- A useful next step would be to test whether adding further pre-game information improves predictions while continuing to evaluate all new models on unseen games.
+
 :::
 
 :::

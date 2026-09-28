@@ -1,8 +1,8 @@
 project:
   render:
     - tutorial.qmd
-title: 'Solutions document: R version'
+title: 'Tutorial Week 10 Solutions: Predicting Attendance at Baseball Games'
 format:
   html:
-    output-file: "tutorial-r-solutions"
+    output-file: "tutorial-week10-solutions"
     output-ext:  "html"

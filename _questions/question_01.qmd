@@ -1,12 +1,45 @@
 <!-- question-type: prepare -->
-### Exercise 1: Title
+### Exercise 1: Creating Training and Test Data
 
-This is the text for the question, with its accompanying code 
+Before we build any prediction models, we need to decide which games we will use to **develop our predictions** and which games we will use to **evaluate them**.
+
+Remember that our goal is to predict attendance at **future** White Sox games. This means we need to recreate that situation using our historical data.
+
+#### (a) Training and test data
+
+We will split `chw_attend` into two datasets:
+
+- **Training data:** games from 2022 to 2024.
+- **Test data:** games from 2025.
+
+Create two objects called `chw_train` and `chw_test` using `filter()`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: FALSE
+chw_train <-
+  chw_attend |>
+  # YOUR CODE HERE
+
+chw_test <-
+  chw_attend |>
+  # YOUR CODE HERE
 ```
+
+#### (b) Checking the split
+
+Use `count()` to check which seasons appear in `chw_train` and `chw_test`.
+
+```{r}
+#| eval: FALSE
+
+# YOUR CODE HERE
+```
+
+#### (c) Why keep the test data separate?
+
+We will develop different prediction approaches using `chw_train`. We will **not** use `chw_test` to decide which approaches look promising.
+
+Why is it useful to keep the 2025 games separate until we have finished developing our prediction approaches?
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +52,24 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- distinguish between training and test data in a predictive analytics workflow;
+- understand why the split follows time when the goal is to predict future games; and
+- explain why the test data should remain unseen while prediction approaches are being developed.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
-
-
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+- The training data contain the historical information available for developing prediction approaches.
+- The 2025 season represents future, unseen games and is therefore reserved for testing.
+- Looking at test performance while developing models undermines its role as an independent evaluation of predictive performance.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may think the test data are simply additional observations that can be used if a model performs poorly on the training data.
+- Students may focus only on having two datasets rather than why the chronological split reflects the actual prediction problem.
 
 :::
 
@@ -55,11 +89,34 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+#### (a)
 
 ```{r}
-print("Hello, world!")
+chw_train <-
+  chw_attend |>
+  filter(year >= 2022, year <= 2024)
+
+chw_test <-
+  chw_attend |>
+  filter(year == 2025)
 ```
+
+#### (b)
+
+```{r}
+chw_train |>
+  count(year)
+
+chw_test |>
+  count(year)
+```
+
+`chw_train` should contain games from 2022, 2023, and 2024, while `chw_test` should contain only games from 2025.
+
+#### (c)
+
+Keeping the test data separate gives us a set of unseen games on which to evaluate our predictions. If we repeatedly use the test data while developing our approaches, we may start choosing approaches that work particularly well for those specific games rather than approaches that will predict future games well.
+
 :::
 
 :::

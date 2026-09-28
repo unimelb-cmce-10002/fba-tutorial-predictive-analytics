@@ -1,10 +1,10 @@
 project:
   render:
     - tutorial.qmd
-title: 'Questions document: R version'
+title: 'Tutorial Week 10: Predicting Attendance at Baseball Games'
 execute:
   eval: false
 format:
   html:
-    output-file: "tutorial-r-questions"
+    output-file: "tutorial-week10-questions"
     output-ext:  "html"

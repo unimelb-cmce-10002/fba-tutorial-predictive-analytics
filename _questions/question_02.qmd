@@ -1,12 +1,60 @@
 <!-- question-type: prepare -->
-### Exercise 2: Title
+## Exercise 2: Predicting Attendance Using the Previous Game
 
-This is the text for the question, with its accompanying code 
+One simple way to predict attendance at a future game is to use attendance at a recent game. We will start with a **lag-1 model**: our prediction for each game is the attendance at the White Sox's previous home game.
+
+### (a) Create lag-1 predictions
+
+Starting with `chw_train`, create a lag-1 prediction of attendance for each game.
+
+Your code should:
+
+- group games by season;
+- arrange games in chronological order;
+- create `pred_lag1`, containing attendance at the previous game;
+- ungroup the data; and
+- keep only `gm`, `year`, `attend`, and `pred_lag1`.
+
+Store the result in `chw_train_pred`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: FALSE
+chw_train_pred <-
+  YOUR_CODE_HERE |>
+  select(gm, year, attend, pred_lag1)
 ```
+
+### (b) Why do we group by season?
+
+Suppose we instead arranged **all** games from 2022 to 2024 chronologically and then used `lag(attend)` without first grouping by season.
+
+What would the lag-1 prediction be for the **first game of the 2024 season**? Why would that not be a sensible prediction for our model?
+
+### (c) What happens to the first game?
+
+Inspect the first few games from each season in `chw_train_pred`.
+
+Why is `pred_lag1` missing for the first game of each season? Is this what you would expect given how we have defined the model?
+
+### (d) Evaluate the lag-1 model
+
+We will use **MAE**, **RMSE**, and **MAPE** to evaluate attendance predictions. Create a metric set containing these three measures and store it as `attendance_metrics`.
+
+Then use `attendance_metrics()` to evaluate the lag-1 model on the training data.
+
+```{r}
+#| eval: FALSE
+
+attendance_metrics <- YOUR_CODE_HERE
+
+chw_train_pred |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
+```
+
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -19,23 +67,31 @@ Teaching Note
 
 ::: {.teaching-block-body}
 
-🎯 **Learning Objective** 
+🎯 **Learning Objective**
+
 Students should:
 
-- XXXXX
+- construct a simple time-based prediction using `lag()`;
+- understand why observations must be ordered chronologically before creating a lag;
+- understand why the lag should be calculated within season; and
+- evaluate training predictions using MAE, RMSE, and MAPE.
 
-✅   **Core Concepts to Highlight**
+✅ **Core Concepts to Highlight**
 
-List them here
-
-
-💬 **Suggested In-Class Prompts** (if needed)
-
-List as needed
+- A lag-1 model uses the attendance at the previous home game in the same season as the prediction for the current game.
+- `arrange()` determines what "previous" means before `lag()` is applied.
+- `group_by(year)` prevents the final game of one season from becoming the prediction for the first game of the next season.
+- `ungroup()` is important once the grouped calculation is complete so that the grouping does not unexpectedly affect later operations.
+- The first game of each season has no lag-1 prediction because there is no previous game in that season.
+- These metrics describe performance on the training data. They do not yet tell us how well the model predicts unseen games.
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Students may use `lag()` without first arranging the games chronologically.
+- Students may forget to group by `year`, creating a prediction for the first game of a season from the previous season's final game.
+- Students may forget to `ungroup()`.
+- Students may reverse `truth` and `estimate` when calling `attendance_metrics()`.
+- Students may interpret the training metrics as evidence that this is a good model for future games. Save that discussion for the in-class comparison of training and test performance.
 
 :::
 
@@ -55,11 +111,41 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+#### (a)
 
 ```{r}
-print("Hello, world!")
+chw_train_pred <-
+  chw_train |>
+  group_by(year) |>
+  arrange(gm, .by_group = TRUE) |>
+  mutate(
+    pred_lag1 = lag(attendance)
+  ) |>
+  ungroup() |>
+  select(gm, year, attendance, pred_lag1)
 ```
+
+#### (b)
+
+Without grouping by season, the lag-1 prediction for the first game of the 2024 season would be attendance at the final game of the 2023 season. This is not the prediction rule we want: the model is intended to use the previous home game **within the same season**.
+
+#### (c)
+
+`pred_lag1` is missing for the first game of each season because there is no previous game within that season. This is exactly what we should expect from the way the lag-1 model is defined.
+
+#### (d)
+
+```{r}
+attendance_metrics <-
+  metric_set(mae, rmse, mape)
+
+chw_train_pred |>
+  attendance_metrics(
+    truth = attendance,
+    estimate = pred_lag1
+  )
+```
+
 :::
 
 :::

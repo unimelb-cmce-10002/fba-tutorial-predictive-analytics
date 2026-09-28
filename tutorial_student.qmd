@@ -6,77 +6,223 @@
 
 By the end of this tutorial, you should be able to:
 
-- COMPLETE THIS
-- WITH MULTIPLE BULLETS
+* Construct simple attendance prediction rules using historical information such as recent games and groups of similar games.
+* Apply prediction rules developed on training data to new test observations without using future information.
+* Evaluate prediction performance using MAE, RMSE, and MAPE.
+* Compare alternative prediction models using a common test sample and appropriate data reshaping.
+* Explain how different prediction rules define which historical observations are most informative.
+* Justify a model recommendation using out-of-sample evidence and communicate the result in a short analytics memo.
 :::
 
 ## The Business Challenge
 
-Explain the Business Challenge and set up in this file
+In the lecture, you completed an internship with the **Chicago Cubs**, where you helped the team predict attendance at future home games. You learned that even simple prediction rules can be useful when they use information that is available before a game takes place.
+
+Your work with the Cubs was a success. Their cross-town rivals, the **Chicago White Sox**, have now hired you to help with the same problem.
+
+Like the Cubs, the White Sox need to make decisions before each home game. How many staff should be rostered? How much food and merchandise should be available? How busy should the team expect the stadium to be? Better predictions of attendance can help the White Sox prepare for these decisions.
+
+You already know that there are different ways we might use past games to predict attendance at a future game. For example, we could use attendance at recent games, or look at attendance for similar types of games.
+
+The challenge is deciding which information produces useful predictions for games we have not yet observed.
+
+## Your task
+
+Your task is to develop and evaluate several simple approaches for predicting attendance at Chicago White Sox home games.
+
+You will:
+
+1. use historical White Sox games to build prediction rules;
+2. consider different ways of deciding which past games are most useful for predicting a future game;
+3. compare how well different approaches predict attendance; and
+4. communicate what you learn in a short **analytics memo** for the White Sox Business Analytics Team.
+
+## Loading Packages and Data
+
+We begin by loading the packages we will use in this tutorial.
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(yardstick)
+```
+
+Next, we load the White Sox attendance data.
+
+```{r}
+# TODO: insert final data-loading code
+chw_attend <- read_csv("data/whitesox_attendance.csv") 
+```
+
+Each row of the dataset represents a Chicago White Sox home game. The dataset contains information about the game that we might use to make predictions, together with the number of fans who attended.
+
+Before continuing, take a moment to inspect the data.
+
+```{r}
+glimpse(chw_attend)
+```
 
 ## Prepare these Exercises before Class 
 
-Prepare these exercises before coming to class. Plan to spend 30 minutes on these exercises.
+Prepare these exercises before coming to class. Plan to spend 45 minutes on these exercises.
 
-### Exercise 1: Title
+### Exercise 1: Creating Training and Test Data
 
-This is the text for the question, with its accompanying code 
+Before we build any prediction models, we need to decide which games we will use to **develop our predictions** and which games we will use to **evaluate them**.
+
+Remember that our goal is to predict attendance at **future** White Sox games. This means we need to recreate that situation using our historical data.
+
+#### (a) Training and test data
+
+We will split `chw_attend` into two datasets:
+
+- **Training data:** games from 2022 to 2024.
+- **Test data:** games from 2025.
+
+Create two objects called `chw_train` and `chw_test` using `filter()`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: FALSE
+chw_train <-
+  chw_attend |>
+  # YOUR CODE HERE
+
+chw_test <-
+  chw_attend |>
+  # YOUR CODE HERE
+```
+
+#### (b) Checking the split
+
+Use `count()` to check which seasons appear in `chw_train` and `chw_test`.
+
+```{r}
+#| eval: FALSE
+
+# YOUR CODE HERE
+```
+
+#### (c) Why keep the test data separate?
+
+We will develop different prediction approaches using `chw_train`. We will **not** use `chw_test` to decide which approaches look promising.
+
+Why is it useful to keep the 2025 games separate until we have finished developing our prediction approaches?
+
+```{r}
+# Write your answer here
+```
+
+## Exercise 2: Predicting Attendance Using the Previous Game
+
+One simple way to predict attendance at a future game is to use attendance at a recent game. We will start with a **lag-1 model**: our prediction for each game is the attendance at the White Sox's previous home game.
+
+### (a) Create lag-1 predictions
+
+Starting with `chw_train`, create a lag-1 prediction of attendance for each game.
+
+Your code should:
+
+- group games by season;
+- arrange games in chronological order;
+- create `pred_lag1`, containing attendance at the previous game;
+- ungroup the data; and
+- keep only `gm`, `year`, `attend`, and `pred_lag1`.
+
+Store the result in `chw_train_pred`.
+
+```{r}
+#| eval: FALSE
+chw_train_pred <-
+  YOUR_CODE_HERE |>
+  select(gm, year, attend, pred_lag1)
+```
+
+### (b) Why do we group by season?
+
+Suppose we instead arranged **all** games from 2022 to 2024 chronologically and then used `lag(attend)` without first grouping by season.
+
+What would the lag-1 prediction be for the **first game of the 2024 season**? Why would that not be a sensible prediction for our model?
+
+### (c) What happens to the first game?
+
+Inspect the first few games from each season in `chw_train_pred`.
+
+Why is `pred_lag1` missing for the first game of each season? Is this what you would expect given how we have defined the model?
+
+### (d) Evaluate the lag-1 model
+
+We will use **MAE**, **RMSE**, and **MAPE** to evaluate attendance predictions. Create a metric set containing these three measures and store it as `attendance_metrics`.
+
+Then use `attendance_metrics()` to evaluate the lag-1 model on the training data.
+
+```{r}
+#| eval: FALSE
+
+attendance_metrics <- YOUR_CODE_HERE
+
+chw_train_pred |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
 ```
 
 ```{r}
 # Write your answer here
 ```
 
-### Exercise 2: Title
+## Exercise 3: Predicting Attendance Using the Opponent
 
-This is the text for the question, with its accompanying code 
+Our lag-1 model uses **when a game occurs** to decide which past game should inform our prediction. Another approach is to look for past games that are similar in some other way.
+
+One potentially useful characteristic is the **opponent**. Some visiting teams may consistently attract larger crowds than others.
+
+For each opponent, we will use their average attendance in **2023** as our prediction for games against that opponent.
+
+### (a) Calculate average attendance by opponent
+
+Using `chw_train`, keep only games from 2023. Then:
+
+- group the data by `opp`;
+- calculate mean `attendance` for each opponent; and
+- store the mean in a variable called `pred_opp`.
+
+Store the resulting table as `attendance_by_opp`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+attendance_by_opp <-
+  YOUR_CODE_HERE
 ```
 
+### (b) Create predictions for the training data
+
+We now have one predicted attendance value for each opponent.
+
+Use a `left_join()` to add `pred_opp` to `chw_train`. Store the result as `chw_train_pred_opp`.
+
 ```{r}
-# Write your answer here
+#| eval: false
+chw_train_pred_opp <-
+  YOUR_CODE_HERE |>
+  select(gm, year, opp, attendance, pred_opp)
 ```
 
-### Exercise 3: Title
+Why do we use `left_join()` with `chw_train` on the left-hand side?
 
-This is the text for the question, with its accompanying code 
+### (c) Evaluate the opponent model
 
-```{r}
-# Example code for the question
-1 + 1
-```
+Use `attendance_metrics()` to evaluate the opponent model on the training data.
 
 ```{r}
-# Write your answer here
-```
-
-### Exercise 4: Title
-
-This is the text for the question, with its accompanying code 
-
-```{r}
-# Example code for the question
-1 + 1
-```
-
-```{r}
-# Write your answer here
-```
-
-### Exercise 5: Title
-
-This is the text for the question, with its accompanying code 
-
-```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+chw_train_pred_opp |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
 ```
 
 ```{r}
@@ -87,68 +233,293 @@ This is the text for the question, with its accompanying code
 
 You will discuss these exercises in class with your peers in small groups and with your tutor. These exercises build from the exercises you have prepared above, you will get the most value from the class if you have completed those above before coming to class.
 
-### Exercise 1: Title
+### Exercise 4: What Have We Learned So Far?
 
-This is the text for the question, with its accompanying code 
+Before developing any new prediction approaches, return to the model-performance results you calculated in the pre-class exercises for the **lag-1 model** and the **opponent model**.
+
+#### (a) Comparing the models
+
+Compare the training-data performance of the two models using the MAE, RMSE, and MAPE values you obtained.
+
+Does either model perform better across **all three** metrics? What do the results tell you about their relative performance on the training data?
+
+#### (b) Can we choose a model yet?
+
+Suppose the White Sox ask you which of these two models they should use to predict attendance at future games.
+
+Can we use the results above to determine which model will make better predictions for future games? Explain why or why not.
+
+For now, we will keep the 2025 test data aside. Before evaluating our models on unseen games, we will use the training data to explore a few other ways of making predictions.
+
+*Write your answer here*
+
+## Exercise 5: Developing Another Time-Based Model
+
+The lag-1 model assumes that the **most recent game** is the most useful past game for predicting attendance at the next game. But this is only one way to use the timing of past games.
+
+Your task is to develop a **different time-based prediction rule** using the training data.
+
+### (a) Propose a prediction rule
+
+Propose a prediction rule that uses attendance at previous games to predict attendance at the current game.
+
+Your rule should use only information that would have been available **before the game you are predicting**.
+
+### (b) Defend your choice
+
+Explain why you think your proposed rule could produce sensible predictions of White Sox attendance. What information from recent attendance does your rule capture, and why might that be useful?
+
+### (c) Create your predictions
+
+Implement your prediction rule using `chw_train`.
+
+Store your predictions in a new column. Give the column a short, descriptive name that makes it clear which model it belongs to.
+
+Remember to:
+
+- calculate predictions separately within each season;
+- arrange games in chronological order before using information from previous games; and
+- `ungroup()` once you have finished any grouped calculations.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+YOUR_CODE_HERE
+```
+
+### (d) Evaluate your model
+
+Use `attendance_metrics()` to evaluate your new model on the training data.
+
+```{r}
+#| eval: false
+
+YOUR_CODE_HERE
+```
+
+Compare these results with the training performance of the lag-1 model.
+
+Does your new model improve on the lag-1 model for any of the three metrics? Does it perform worse on any?
+
+```{r}
+# Write your answer here
+```
+
+### Exercise 6: Finding More Similar Games
+
+The models we have developed so far make different choices about which previous games should inform a prediction. For example, lag-1 assumes that the **most recent game** is the most useful comparison.
+
+But the most recent game is not necessarily the **most similar game**.
+
+#### (a) Which games are most useful?
+
+Suppose you need to predict attendance for an upcoming White Sox home game.
+Propose a prediction rule that uses attendance from past games you think are particularly useful comparisons.
+
+You can use any combination of the ideas you have seen so far. For example, you might:
+
+- define groups of similar games and use their average attendance;
+- use `lag()` to find a relevant previous game; or
+- combine grouping and lagging so that the previous observation comes from a particular type of game.
+
+Describe your prediction rule in words before writing any code.
+
+#### (b) Defend your choice
+
+Explain why the past games selected by your rule should be useful for predicting attendance at the upcoming game.
+
+In particular, discuss:
+
+1. What makes these games similar to the game you are trying to predict?
+2. What information might your rule capture that the models from the previous exercises miss?
+
+#### (c) Create your predictions
+
+Implement your prediction rule using `chw_train`.
+
+Depending on your idea, you may need to use some combination of:
+
+- `mutate()` to create useful variables;
+- `group_by()` and `summarise()` to calculate averages for similar games;
+- `left_join()` to attach those averages to games;
+- `arrange()` and `lag()` to use a relevant previous observation.
+
+```{r}
+#| eval: false
+
+chw_train_pred_new <-
+  YOUR_CODE_HERE
+```
+
+#### (d) Evaluate your prediction rule
+
+Use `attendance_metrics` to evaluate your new rule on the training data.
+
+```{r}
+#| eval: false
+
+attendance_metrics(
+  chw_train_pred_new,
+  truth = YOUR_CODE_HERE,
+  estimate = YOUR_CODE_HERE
+)
 ```
 
 ```{r}
 # Write your answer here
 ```
 
-### Exercise 7: Title
+### Exercise 7: How Well Do Our Models Predict New Games?
 
-This is the text for the question, with its accompanying code 
+We developed our prediction rules using the training data. Now we can see how well they predict **new games**.
+
+#### (a)
+
+Apply the prediction rules you developed in the previous exercises to the 2025 test data. Do not use 2025 attendance to construct or update your prediction rules.
+
+Store the predictions together with actual attendance in `chw_test_preds`.
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+chw_test_preds <-
+  chw_test |> 
+  YOUR_CODE_HERE
 ```
+
+#### (b) Compare the same games
+
+Create `chw_test_complete` by keeping only games for which all of the models you want to compare have predictions. Why does evaluating the models on the **same games** make the comparison fairer?
+
+```{r}
+#| eval: false
+
+chw_test_complete <-
+  chw_test_preds |>
+  filter(
+    YOUR_CODE_HERE
+  )
+```
+
+#### (c) Reshape the predictions
+
+Each model is currently stored in a different prediction column. Explain why this **wide format would lead us to repeat very similar code** when evaluating several models.
+
+#### (d)
+
+Rather than keeping the predictions in wide format, reshape them into long format.
+
+Use `pivot_longer()` to create a `model` column and a `.pred` column.
+
+```{r}
+#| eval: false
+
+chw_test_long <-
+  chw_test_complete |>
+  pivot_longer(
+    cols = YOUR_CODE_HERE,
+    names_to = YOUR_CODE_HERE,
+    values_to = YOUR_CODE_HERE
+  )
+```
+
+#### (e) Evaluate the models
+
+Calculate MAE, RMSE, and MAPE for each model.
+
+```{r}
+#| eval: false
+
+test_metrics <-
+  chw_test_long |>
+  YOUR_CODE_HERE |>
+  attendance_metrics(
+    truth = YOUR_CODE_HERE,
+    estimate = YOUR_CODE_HERE
+  )
+
+test_metrics
+```
+
+#### (f) Make the results easier to compare
+
+Use `pivot_wider()` to reshape the data once more to create one row per model, with separate columns for MAE, RMSE, and MAPE.
+
+```{r}
+#| eval: false
+
+test_metrics_wide <-
+  test_metrics |>
+  select(model, .metric, .estimate) |>
+  pivot_wider(
+    names_from = YOUR_CODE_HERE,
+    values_from = YOUR_CODE_HERE
+  )
+
+test_metrics_wide
+```
+
+#### (g) 
+
+Which is the best prediction model? Explain your reasoning.
 
 ```{r}
 # Write your answer here
 ```
 
-### Exercise 8: Title
+### Exercise 8: Communicating Your Results in an Analytics Team Memo
 
-This is the text for the question, with its accompanying code 
+You have now developed and evaluated several ways to predict White Sox home-game attendance.
 
-```{r}
-# Example code for the question
-1 + 1
-```
+Your task is to write a short memo for an **analytics team meeting**. The goal is to help the team decide which prediction approach should be used as a starting point for forecasting attendance at future games.
 
-```{r}
-# Write your answer here
-```
+::: {.callout-tip collapse=true}
 
-### Exercise 9: Title
+## Writing Hints
 
-This is the text for the question, with its accompanying code 
+* Use the **"Write Like an Amazonian"** tips to guide your writing.
+* A strong memo should **compare the prediction approaches**, not just describe the model you prefer.
+* Focus on the **analytical takeaway**: what did the different prediction rules capture, and which ideas generalised to new games?
+* Use the **test-set results** as your main evidence when comparing predictive performance.
+* Keep the writing clear and direct. Do not simply restate the code you ran.
 
-```{r}
-# Example code for the question
-1 + 1
-```
+:::
 
-```{r}
-# Write your answer here
-```
+::: {.callout-note collapse=true}
 
-### Exercise 10: Title
+## Suggested Memo Structure
 
-This is the text for the question, with its accompanying code 
+Use the outline below and provide **2–3 bullet points under each subheading**.
 
-```{r}
-# Example code for the question
-1 + 1
-```
+**Problem Statement**  
+*(1 short paragraph summarising why the White Sox want to predict attendance and what business decisions these forecasts could support)*
 
-```{r}
-# Write your answer here
-```
+**Approaches Compared**
+
+* Briefly describe the prediction approaches you explored
+* Explain what historical information each approach uses
+
+**Recommended Approach**
+
+* Which prediction model would you recommend the analytics team use as a starting point?
+* What evidence supports your recommendation?
+
+**What We Learned About Attendance**
+
+* What kinds of historical games appeared to be most useful for predicting attendance?
+* Did the models reveal anything about whether recent games, opponents, or other similarities matter?
+
+**Proposed Implications**
+
+* How could the recommended predictions help with staffing, food and merchandise planning, or stadium operations?
+* How should the team interpret the size of the prediction errors when using the model?
+
+**Limitations & Next Steps**
+
+* What are the main limitations of the prediction approach?
+* What additional information or model improvements would you want the team to explore next?
+
+:::
+
+*Write your answer here*
 

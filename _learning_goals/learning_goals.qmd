@@ -3,6 +3,10 @@
 
 By the end of this tutorial, you should be able to:
 
-- COMPLETE THIS
-- WITH MULTIPLE BULLETS
+* Construct simple attendance prediction rules using historical information such as recent games and groups of similar games.
+* Apply prediction rules developed on training data to new test observations without using future information.
+* Evaluate prediction performance using MAE, RMSE, and MAPE.
+* Compare alternative prediction models using a common test sample and appropriate data reshaping.
+* Explain how different prediction rules define which historical observations are most informative.
+* Justify a model recommendation using out-of-sample evidence and communicate the result in a short analytics memo.
 :::

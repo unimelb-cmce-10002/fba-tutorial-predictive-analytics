@@ -1,3 +1,49 @@
 ## The Business Challenge
 
-Explain the Business Challenge and set up in this file
+In the lecture, you completed an internship with the **Chicago Cubs**, where you helped the team predict attendance at future home games. You learned that even simple prediction rules can be useful when they use information that is available before a game takes place.
+
+Your work with the Cubs was a success. Their cross-town rivals, the **Chicago White Sox**, have now hired you to help with the same problem.
+
+Like the Cubs, the White Sox need to make decisions before each home game. How many staff should be rostered? How much food and merchandise should be available? How busy should the team expect the stadium to be? Better predictions of attendance can help the White Sox prepare for these decisions.
+
+You already know that there are different ways we might use past games to predict attendance at a future game. For example, we could use attendance at recent games, or look at attendance for similar types of games.
+
+The challenge is deciding which information produces useful predictions for games we have not yet observed.
+
+## Your task
+
+Your task is to develop and evaluate several simple approaches for predicting attendance at Chicago White Sox home games.
+
+You will:
+
+1. use historical White Sox games to build prediction rules;
+2. consider different ways of deciding which past games are most useful for predicting a future game;
+3. compare how well different approaches predict attendance; and
+4. communicate what you learn in a short **analytics memo** for the White Sox Business Analytics Team.
+
+## Loading Packages and Data
+
+We begin by loading the packages we will use in this tutorial.
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(yardstick)
+```
+
+Next, we load the White Sox attendance data.
+
+```{r}
+# TODO: insert final data-loading code
+chw_attend <- read_csv("data/whitesox_attendance.csv") 
+```
+
+Each row of the dataset represents a Chicago White Sox home game. The dataset contains information about the game that we might use to make predictions, together with the number of fans who attended.
+
+Before continuing, take a moment to inspect the data.
+
+```{r}
+glimpse(chw_attend)
+```
